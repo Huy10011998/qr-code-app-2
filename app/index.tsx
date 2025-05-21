@@ -10,15 +10,14 @@ import {
   Image,
   Keyboard,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useAuth } from "../components/auth/AuthProvider";
 import { ThemedView } from "../components/ThemedView";
+import { ThemedText } from "../components/ThemedText";
+import { ThemedTextInput } from "../components/ThemedTextInput";
 
 const windowWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
@@ -30,55 +29,49 @@ export default function LoginScreen() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isLoginDisabled, setIsLoginDisabled] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasSavedLogin, setHasSavedLogin] = useState(false); // Track if credentials are saved
-  const { setUserData, setToken, token } = useAuth();
+  const { setUserData, setToken } = useAuth();
 
   useEffect(() => {
     setIsLoginDisabled(!(userId.trim() && password.trim()));
   }, [userId, password]);
 
-  // Attempt auto-login with saved FaceID credentials
   useEffect(() => {
-    // SecureStore.deleteItemAsync("faceid_credentials");
     const tryAutoLoginWithFaceID = async () => {
       const savedData = await SecureStore.getItemAsync("faceid_credentials");
-      console.log("===1", savedData);
+      if (savedData) {
+        const compatible = await LocalAuthentication.hasHardwareAsync();
+        const enrolled = await LocalAuthentication.isEnrolledAsync();
 
-      if (!savedData) return;
+        if (compatible && enrolled) {
+          const result = await LocalAuthentication.authenticateAsync({
+            promptMessage: "Xác thực để đăng nhập",
+            fallbackLabel: "Dùng mật khẩu",
+          });
 
-      const compatible = await LocalAuthentication.hasHardwareAsync();
-      const enrolled = await LocalAuthentication.isEnrolledAsync();
+          if (result.success) {
+            const { userId, password } = JSON.parse(savedData);
+            try {
+              const response = await axios.post(
+                "https://hrcert.cholimexfood.com.vn/api/auth/login",
+                { userId, password }
+              );
 
-      if (compatible && enrolled) {
-        const result = await LocalAuthentication.authenticateAsync({
-          promptMessage: "Xác thực để đăng nhập",
-          fallbackLabel: "Dùng mật khẩu",
-        });
-
-        if (result.success) {
-          const { userId, password } = JSON.parse(savedData);
-          console.log("===2", savedData);
-          try {
-            const response = await axios.post(
-              "https://hrcert.cholimexfood.com.vn/api/auth/login",
-              { userId, password }
-            );
-
-            if (response.status === 200) {
-              const userData = response.data.data;
-              setUserData(userData);
-              setToken(response.data.token);
-              (navigation.navigate as any)("(tabs)");
+              if (response.status === 200) {
+                const userData = response.data.data;
+                setUserData(userData);
+                setToken(response.data.token);
+                (navigation.navigate as any)("(tabs)");
+              }
+            } catch {
+              Alert.alert("Lỗi", "Không thể đăng nhập tự động.");
             }
-          } catch {
-            Alert.alert("Lỗi", "Không thể đăng nhập tự động.");
           }
         }
       }
     };
 
     tryAutoLoginWithFaceID();
-  }, []);
+  }, [navigation.navigate, setToken, setUserData]);
 
   const handlePressLogin = async () => {
     if (isLoading) return;
@@ -96,7 +89,6 @@ export default function LoginScreen() {
         setUserData(userData);
         setToken(response.data.token);
 
-        // ✅ Hỏi người dùng có muốn lưu thông tin để dùng Face ID
         Alert.alert(
           "Lưu đăng nhập?",
           "Bạn có muốn sử dụng Face ID để đăng nhập tự động lần sau?",
@@ -125,7 +117,7 @@ export default function LoginScreen() {
           ]
         );
       }
-    } catch (error) {
+    } catch {
       Alert.alert("Đăng nhập thất bại", "Sai tài khoản hoặc mật khẩu.");
       setPassword("");
     } finally {
@@ -139,45 +131,34 @@ export default function LoginScreen() {
 
     try {
       const compatible = await LocalAuthentication.hasHardwareAsync();
-      if (!compatible) {
-        Alert.alert("Lỗi", "Thiết bị của bạn không hỗ trợ Face ID.");
-        setIsLoading(false);
-        return;
-      }
-
       const enrolled = await LocalAuthentication.isEnrolledAsync();
-      if (!enrolled) {
-        Alert.alert("Lỗi", "Bạn chưa cài đặt Face ID trên thiết bị.");
-        setIsLoading(false);
+
+      if (!compatible || !enrolled) {
+        Alert.alert("Thiết bị không hỗ trợ hoặc chưa cài Face ID.");
         return;
       }
 
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: "Đăng nhập bằng khuôn mặt",
-        fallbackLabel: "Sử dụng mật khẩu",
+        promptMessage: "Đăng nhập bằng Face ID",
+        fallbackLabel: "Dùng mật khẩu",
       });
 
       if (result.success) {
         const savedData = await SecureStore.getItemAsync("faceid_credentials");
         if (!savedData) {
-          Alert.alert("Không tìm thấy tài khoản đã lưu.");
+          Alert.alert("Không tìm thấy thông tin đăng nhập đã lưu.");
           return;
         }
 
         const { userId, password } = JSON.parse(savedData);
-
-        // Gọi hàm handlePressLogin để tự động đăng nhập
         setUserId(userId);
         setPassword(password);
-        handlePressLogin(); // Tự động gửi yêu cầu đăng nhập
+        handlePressLogin();
       } else {
-        Alert.alert(
-          "Đăng nhập thất bại",
-          "Xác thực khuôn mặt không thành công."
-        );
+        Alert.alert("Thất bại", "Xác thực Face ID không thành công.");
       }
-    } catch (error) {
-      Alert.alert("Lỗi", "Đã xảy ra lỗi khi đăng nhập bằng Face ID.");
+    } catch {
+      Alert.alert("Lỗi", "Đã xảy ra lỗi khi xác thực Face ID.");
     } finally {
       setIsLoading(false);
     }
@@ -185,84 +166,70 @@ export default function LoginScreen() {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <KeyboardAwareScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        enableOnAndroid={true}
-        extraScrollHeight={50}
-      >
-        <View style={styles.bgLogin}>
-          <ThemedView style={[styles.contaiContent, { flex: 0.5 }]}>
-            <Image
-              source={require("../assets/images/logo-cholimex.jpg")}
-              style={styles.logoCholimex}
+      <KeyboardAwareScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <ThemedView style={[styles.contaiContent, { flex: 0.5 }]}>
+          <Image
+            source={require("../assets/images/logo-cholimex.jpg")}
+            style={styles.logoCholimex}
+          />
+        </ThemedView>
+
+        <ThemedView style={[styles.contaiInput, { flex: 0.5 }]}>
+          <ThemedTextInput
+            placeholder="Tài khoản"
+            value={userId}
+            onChangeText={setUserId}
+          />
+          <ThemedView style={styles.contaiInputPW}>
+            <ThemedTextInput
+              secureTextEntry={!isPasswordVisible}
+              placeholder="Mật khẩu"
+              value={password}
+              onChangeText={setPassword}
             />
+            <TouchableOpacity
+              style={styles.iconEyeContainer}
+              onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+            >
+              <Image
+                source={
+                  isPasswordVisible
+                    ? require("../assets/images/iconEye-hide.png")
+                    : require("../assets/images/iconEye-view.png")
+                }
+                style={styles.iconEye}
+              />
+            </TouchableOpacity>
           </ThemedView>
 
-          <ThemedView style={[styles.contaiInput, { flex: 0.5 }]}>
-            {!hasSavedLogin && (
-              <>
-                <TextInput
-                  style={styles.inputContai}
-                  placeholder="Tài khoản"
-                  value={userId}
-                  onChangeText={setUserId}
+          <ThemedView style={styles.rowContainer}>
+            <TouchableOpacity
+              style={[styles.btnContai, isLoginDisabled && styles.disabledBtn]}
+              onPress={handlePressLogin}
+              disabled={isLoginDisabled || isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" />
+              ) : (
+                <ThemedText type="default">Đăng nhập</ThemedText>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iconFaceID}
+              onPress={handleFaceIDLogin}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" />
+              ) : (
+                <Image
+                  source={require("../assets/images/faceid-icon2.png")}
+                  style={styles.faceIDIcon}
                 />
-                <View style={styles.contaiInputPW}>
-                  <TextInput
-                    style={styles.inputContaiPW}
-                    secureTextEntry={!isPasswordVisible}
-                    placeholder="Mật khẩu"
-                    value={password}
-                    onChangeText={setPassword}
-                  />
-                  <TouchableOpacity
-                    style={styles.iconEyeContainer}
-                    onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-                  >
-                    <Image
-                      source={
-                        isPasswordVisible
-                          ? require("../assets/images/iconEye-hide.png")
-                          : require("../assets/images/iconEye-view.png")
-                      }
-                      style={styles.iconEye}
-                    />
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-            <View style={styles.rowContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.btnContai,
-                  isLoginDisabled && styles.disabledBtn,
-                ]}
-                onPress={handlePressLogin}
-                disabled={isLoginDisabled || isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.textContai}>Đăng nhập</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.iconFaceID}
-                onPress={handleFaceIDLogin}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Image
-                    source={require("../assets/images/faceid-icon.png")} // Cập nhật icon Face ID ở đây
-                    style={styles.faceIDIcon}
-                  />
-                )}
-              </TouchableOpacity>
-            </View>
+              )}
+            </TouchableOpacity>
           </ThemedView>
-        </View>
+        </ThemedView>
       </KeyboardAwareScrollView>
     </TouchableWithoutFeedback>
   );
@@ -272,8 +239,6 @@ const styles = StyleSheet.create({
   bgLogin: {
     width: windowWidth,
     height: windowHeight,
-    backgroundColor: "white",
-    padding: 16,
   },
   contaiContent: {
     justifyContent: "center",
@@ -281,35 +246,18 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   contaiInput: {
-    backgroundColor: "transparent",
     width: "100%",
+    padding: 16,
   },
   logoCholimex: {
     resizeMode: "contain",
-    width: 200,
-    height: 100,
-  },
-  inputContai: {
-    fontSize: 16,
-    height: 60,
-    borderBottomWidth: 1,
-    borderColor: "#000",
-    color: "#000",
-    fontWeight: "500",
+    width: 300,
+    height: 150,
   },
   contaiInputPW: {
     flexDirection: "row",
     alignItems: "center",
     paddingTop: 20,
-  },
-  inputContaiPW: {
-    fontSize: 16,
-    height: 60,
-    borderBottomWidth: 1,
-    borderColor: "#000",
-    color: "#000",
-    fontWeight: "500",
-    flex: 1,
   },
   iconEyeContainer: {
     position: "absolute",
@@ -327,12 +275,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FF3333",
     justifyContent: "center",
   },
-  textContai: {
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#fff",
-  },
   disabledBtn: {
     opacity: 0.6,
     backgroundColor: "#cccccc",
@@ -345,8 +287,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   faceIDIcon: {
-    width: 40,
-    height: 40,
+    width: 60,
+    height: 60,
   },
   rowContainer: {
     flexDirection: "row",

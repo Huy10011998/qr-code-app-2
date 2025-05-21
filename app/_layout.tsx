@@ -37,19 +37,6 @@ export default function RootLayout() {
 }
 
 function AppNavigator({ colorScheme }: { colorScheme: "light" | "dark" }) {
-  // const { token } = useAuth();
-  // const router = useRouter();
-  // const [hasNavigated, setHasNavigated] = React.useState(false);
-
-  // useEffect(() => {
-  //   if (token) {
-  //     router.replace("(tabs)" as Href);
-  //   } else {
-  //     router.replace("index" as Href);
-  //   }
-  //   setHasNavigated(true);
-  // }, [token, hasNavigated]);
-
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack screenOptions={{ headerShown: false }}>

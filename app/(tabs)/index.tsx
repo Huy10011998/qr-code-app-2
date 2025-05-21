@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -80,7 +80,7 @@ export default function TabOneScreen() {
           setEmail(response.data.data.email);
         }
       } catch (error) {
-        if (axios.isAxiosError(error)) {
+        if (isAxiosError(error)) {
           if (error.response?.status === 401) {
             Alert.alert("Thông báo", "Lấy thông tin thất bại!!!");
           } else if (error.response?.status === 404) {
@@ -103,7 +103,7 @@ export default function TabOneScreen() {
     };
 
     fetchQrCode();
-  }, [userId]);
+  }, [token, userId]);
 
   const WebsiteLink = () => {
     const handlePress = () => {
@@ -124,8 +124,9 @@ export default function TabOneScreen() {
       containerBackground={
         <Image
           source={require("../../assets/images/bg-qrcode.png")}
-          style={styles.bgQrCode}
           onLoad={() => setImageLoaded(true)}
+          resizeMode="stretch"
+          style={{ width: windowWidth, height: windowHeight }}
         />
       }
     >
@@ -211,10 +212,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  bgQrCode: {
-    width: windowWidth,
-    height: windowHeight,
-  },
+
   contaiQrcode: {
     marginTop: 32,
     alignSelf: "flex-start",
