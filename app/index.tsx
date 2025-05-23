@@ -1,6 +1,6 @@
 import axios from "axios";
 import * as LocalAuthentication from "expo-local-authentication";
-import { useNavigation } from "expo-router";
+import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import {
@@ -23,7 +23,7 @@ const windowWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
 
 export default function LoginScreen() {
-  const navigation = useNavigation();
+  const router = useRouter();
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -60,7 +60,8 @@ export default function LoginScreen() {
                 const userData = response.data.data;
                 setUserData(userData);
                 setToken(response.data.token);
-                (navigation.navigate as any)("(tabs)");
+
+                router.replace("/(tabs)/qrcode");
               }
             } catch {
               Alert.alert("Lỗi", "Không thể đăng nhập tự động.");
@@ -71,7 +72,7 @@ export default function LoginScreen() {
     };
 
     tryAutoLoginWithFaceID();
-  }, [navigation.navigate, setToken, setUserData]);
+  }, [setToken, setUserData, router]);
 
   const handlePressLogin = async () => {
     if (isLoading) return;
@@ -97,7 +98,7 @@ export default function LoginScreen() {
               text: "Không",
               style: "cancel",
               onPress: () => {
-                (navigation.navigate as any)("(tabs)");
+                router.replace("/(tabs)/qrcode");
               },
             },
             {
@@ -111,7 +112,8 @@ export default function LoginScreen() {
                 } catch (e) {
                   console.warn("Không thể lưu thông tin FaceID:", e);
                 }
-                (navigation.navigate as any)("(tabs)");
+
+                router.replace("/(tabs)/qrcode");
               },
             },
           ]
@@ -287,8 +289,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   faceIDIcon: {
-    width: 60,
-    height: 60,
+    width: 50,
+    height: 50,
   },
   rowContainer: {
     flexDirection: "row",

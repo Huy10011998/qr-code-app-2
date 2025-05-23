@@ -19,7 +19,21 @@ import { ThemedView } from "../../components/ThemedView";
 const windowWidth = Dimensions.get("window").width;
 const windowHeight = Dimensions.get("window").height;
 
-export default function TabOneScreen() {
+const WebsiteLink = () => {
+  const handlePress = () => {
+    Linking.openURL("https://cholimexfood.com.vn/");
+  };
+
+  return (
+    <TouchableOpacity onPress={handlePress}>
+      <ThemedText type="titleFooter">
+        Website: www.cholimexfood.com.vn
+      </ThemedText>
+    </TouchableOpacity>
+  );
+};
+
+export default function QrCodeScreen() {
   const [id, setId] = useState("");
   const [fullName, setfullName] = useState("");
   const [department, setDepartment] = useState("");
@@ -28,9 +42,12 @@ export default function TabOneScreen() {
   const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  const { userData } = useAuth();
+  const { userData, token } = useAuth();
   const userId = userData.userId;
-  const { token } = useAuth();
+
+  useEffect(() => {
+    console.log("Token from QrCodeScreen:", token);
+  }, [token]);
 
   const formatPhoneNumber = (phoneNumber: string) => {
     const cleaned = ("" + phoneNumber).replace(/\D/g, "");
@@ -105,20 +122,6 @@ export default function TabOneScreen() {
     fetchQrCode();
   }, [token, userId]);
 
-  const WebsiteLink = () => {
-    const handlePress = () => {
-      Linking.openURL("https://cholimexfood.com.vn/");
-    };
-
-    return (
-      <TouchableOpacity onPress={handlePress}>
-        <ThemedText type="titleFooter">
-          Website: www.cholimexfood.com.vn
-        </ThemedText>
-      </TouchableOpacity>
-    );
-  };
-
   return (
     <ParallaxScrollView
       containerBackground={
@@ -136,68 +139,70 @@ export default function TabOneScreen() {
         </View>
       ) : (
         <>
-          <ThemedView style={styles.contaiQrcode}>
-            <QRCodeGenerator
-              url={`https://hrcert.cholimexfood.com.vn/profile/${id}`}
-            />
-          </ThemedView>
-          <ThemedView style={styles.contaiContent}>
-            <ThemedText type="subtitle">{fullName}</ThemedText>
-            <ThemedText type="titleDepartment">{department}</ThemedText>
-            <ThemedView style={[styles.contaiContent, styles.rowContai]}>
-              <Image
-                source={require("../../assets/images/iconphone.png")}
-                style={styles.iconPhone}
+          <ThemedView style={styles.content}>
+            <ThemedView style={styles.contaiQrcode}>
+              <QRCodeGenerator
+                url={`https://hrcert.cholimexfood.com.vn/profile/${id}`}
               />
-              <ThemedText type="titlePhone">
-                {formatPhoneNumber(phoneNumber)}
+            </ThemedView>
+            <ThemedView style={styles.contaiContent}>
+              <ThemedText type="subtitle">{fullName}</ThemedText>
+              <ThemedText type="titleDepartment">{department}</ThemedText>
+              <ThemedView style={[styles.contaiContent, styles.rowContai]}>
+                <Image
+                  source={require("../../assets/images/iconphone.png")}
+                  style={styles.iconPhone}
+                />
+                <ThemedText type="titlePhone">
+                  {formatPhoneNumber(phoneNumber)}
+                </ThemedText>
+              </ThemedView>
+            </ThemedView>
+            <ThemedView style={[styles.flexStart]}>
+              <ThemedText type="subtitleFooter">
+                Công ty cổ phần thực phẩm cholimex
               </ThemedText>
-            </ThemedView>
-          </ThemedView>
-          <ThemedView style={[styles.flexStart]}>
-            <ThemedText type="subtitleFooter">
-              Công ty cổ phần thực phẩm cholimex
-            </ThemedText>
-            <ThemedView
-              style={[
-                styles.contaiContent,
-                styles.rowContai,
-                styles.padTopLeft,
-              ]}
-            >
-              <Image
-                source={require("../../assets/images/iconlocation.png")}
-                style={[styles.iconFooter, styles.flexStart]}
-              />
-              <ThemedText type="titleFooter">
-                Đường số 7, KCN Vĩnh Lộc, Huyện Bình Chánh, TP.HCM, Việt Nam
-              </ThemedText>
-            </ThemedView>
-            <ThemedView
-              style={[
-                styles.contaiContent,
-                styles.rowContai,
-                styles.padTopLeft,
-              ]}
-            >
-              <Image
-                source={require("../../assets/images/iconmail.png")}
-                style={styles.iconFooter}
-              />
-              <ThemedText type="titleFooter">Email: {email}</ThemedText>
-            </ThemedView>
-            <ThemedView
-              style={[
-                styles.contaiContent,
-                styles.rowContai,
-                styles.padTopLeft,
-              ]}
-            >
-              <Image
-                source={require("../../assets/images/iconwebsite.png")}
-                style={styles.iconFooter}
-              />
-              <WebsiteLink />
+              <ThemedView
+                style={[
+                  styles.contaiContent,
+                  styles.rowContai,
+                  styles.padTopLeft,
+                ]}
+              >
+                <Image
+                  source={require("../../assets/images/iconlocation.png")}
+                  style={[styles.iconFooter, styles.flexStart]}
+                />
+                <ThemedText type="titleFooter">
+                  Đường số 7, KCN Vĩnh Lộc, Huyện Bình Chánh, TP.HCM, Việt Nam
+                </ThemedText>
+              </ThemedView>
+              <ThemedView
+                style={[
+                  styles.contaiContent,
+                  styles.rowContai,
+                  styles.padTopLeft,
+                ]}
+              >
+                <Image
+                  source={require("../../assets/images/iconmail.png")}
+                  style={styles.iconFooter}
+                />
+                <ThemedText type="titleFooter">Email: {email}</ThemedText>
+              </ThemedView>
+              <ThemedView
+                style={[
+                  styles.contaiContent,
+                  styles.rowContai,
+                  styles.padTopLeft,
+                ]}
+              >
+                <Image
+                  source={require("../../assets/images/iconwebsite.png")}
+                  style={styles.iconFooter}
+                />
+                <WebsiteLink />
+              </ThemedView>
             </ThemedView>
           </ThemedView>
         </>
@@ -208,11 +213,23 @@ export default function TabOneScreen() {
 
 const styles = StyleSheet.create({
   loaderContainer: {
+    position: "absolute",
+    width: windowWidth,
+    height: windowHeight,
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-
+  content: {
+    position: "absolute",
+    width: windowWidth,
+    height: windowHeight * 0.9,
+    justifyContent: "space-between",
+    alignItems: "center",
+    zIndex: 1,
+    backgroundColor: "transparent",
+    padding: 16,
+  },
   contaiQrcode: {
     marginTop: 32,
     alignSelf: "flex-start",

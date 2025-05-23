@@ -1,8 +1,6 @@
 import type { PropsWithChildren, ReactElement } from "react";
-import { Dimensions, StyleSheet } from "react-native";
+import { Dimensions, StyleSheet, ViewStyle } from "react-native";
 import Animated, { useAnimatedRef } from "react-native-reanimated";
-
-import React from "react";
 import { ThemedView } from "./ThemedView";
 
 const windowWidth = Dimensions.get("window").width;
@@ -10,9 +8,11 @@ const windowHeight = Dimensions.get("window").height;
 
 type Props = PropsWithChildren<{
   containerBackground: ReactElement;
+  style?: ViewStyle | ViewStyle[];
 }>;
 
 export default function ParallaxScrollView({
+  style,
   children,
   containerBackground,
 }: Props) {
@@ -21,10 +21,10 @@ export default function ParallaxScrollView({
   return (
     <ThemedView style={styles.container}>
       <Animated.ScrollView ref={scrollRef} scrollEventThrottle={16}>
-        <Animated.View style={styles.backgroundImage}>
+        <Animated.View style={styles.backgroundImageWrapper}>
           {containerBackground}
         </Animated.View>
-        <ThemedView style={styles.content}>{children}</ThemedView>
+        <ThemedView style={style}>{children}</ThemedView>
       </Animated.ScrollView>
     </ThemedView>
   );
@@ -33,20 +33,14 @@ export default function ParallaxScrollView({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    position: "relative",
   },
-  backgroundImage: {
+  backgroundImageWrapper: {
+    position: "absolute",
+    top: 0,
+    left: 0,
     width: windowWidth,
     height: windowHeight,
-  },
-  content: {
-    flex: 1,
-    overflow: "hidden",
-    position: "absolute",
-    backgroundColor: "transparent",
-    padding: 16,
-    height: "90%",
-    width: windowWidth,
-    justifyContent: "space-between",
-    alignItems: "center",
+    zIndex: 0,
   },
 });

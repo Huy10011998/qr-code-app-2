@@ -40,10 +40,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     phoneNumber: null,
   });
 
-  // useEffect(() => {
-  //   AsyncStorage.removeItem("token");
-  // }, [token]);
-
   // Hàm cập nhật userData và lưu vào AsyncStorage
   const setInfoUser = async (newUserData: UserData) => {
     try {

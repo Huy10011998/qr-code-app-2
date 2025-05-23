@@ -28,7 +28,7 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="qrcode"
         options={{
           title: "Home",
           tabBarIcon: ({ color }) => (
@@ -37,18 +37,18 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="setting"
         options={{
           title: "Setting",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
+            <IconSymbol size={28} name="gearshape.fill" color={color} />
           ),
         }}
-        listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-          },
-        }}
+        // listeners={{
+        //   tabPress: (e) => {
+        //     e.preventDefault();
+        //   },
+        // }}
       />
     </Tabs>
   );
