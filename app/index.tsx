@@ -2,9 +2,8 @@ import axios from "axios";
 import * as LocalAuthentication from "expo-local-authentication";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useRef } from "react";
 import {
   ActivityIndicator,
   Alert,
