@@ -45,10 +45,6 @@ export default function QrCodeScreen() {
   const { userData, token } = useAuth();
   const userId = userData.userId;
 
-  useEffect(() => {
-    console.log("Token from QrCodeScreen:", token);
-  }, [token]);
-
   const formatPhoneNumber = (phoneNumber: string) => {
     const cleaned = ("" + phoneNumber).replace(/\D/g, "");
 

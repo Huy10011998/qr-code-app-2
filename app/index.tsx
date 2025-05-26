@@ -3,6 +3,8 @@ import * as LocalAuthentication from "expo-local-authentication";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useRef } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -30,49 +32,55 @@ export default function LoginScreen() {
   const [isLoginDisabled, setIsLoginDisabled] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const { setUserData, setToken } = useAuth();
+  const hasTriedFaceID = useRef(false);
 
   useEffect(() => {
     setIsLoginDisabled(!(userId.trim() && password.trim()));
   }, [userId, password]);
 
-  useEffect(() => {
-    const tryAutoLoginWithFaceID = async () => {
-      const savedData = await SecureStore.getItemAsync("faceid_credentials");
-      if (savedData) {
-        const compatible = await LocalAuthentication.hasHardwareAsync();
-        const enrolled = await LocalAuthentication.isEnrolledAsync();
+  useFocusEffect(
+    useCallback(() => {
+      const tryAutoLoginWithFaceID = async () => {
+        if (hasTriedFaceID.current) return; // Chạy duy nhất 1 lần
+        hasTriedFaceID.current = true;
 
-        if (compatible && enrolled) {
-          const result = await LocalAuthentication.authenticateAsync({
-            promptMessage: "Xác thực để đăng nhập",
-            fallbackLabel: "Dùng mật khẩu",
-          });
+        const savedData = await SecureStore.getItemAsync("faceid_credentials");
+        if (savedData) {
+          const compatible = await LocalAuthentication.hasHardwareAsync();
+          const enrolled = await LocalAuthentication.isEnrolledAsync();
 
-          if (result.success) {
-            const { userId, password } = JSON.parse(savedData);
-            try {
-              const response = await axios.post(
-                "https://hrcert.cholimexfood.com.vn/api/auth/login",
-                { userId, password }
-              );
+          if (compatible && enrolled) {
+            const result = await LocalAuthentication.authenticateAsync({
+              promptMessage: "Xác thực để đăng nhập",
+              fallbackLabel: "Dùng mật khẩu",
+            });
 
-              if (response.status === 200) {
-                const userData = response.data.data;
-                setUserData(userData);
-                setToken(response.data.token);
+            if (result.success) {
+              const { userId, password } = JSON.parse(savedData);
+              try {
+                const response = await axios.post(
+                  "https://hrcert.cholimexfood.com.vn/api/auth/login",
+                  { userId, password }
+                );
 
-                router.replace("/(tabs)/qrcode");
+                if (response.status === 200) {
+                  const userData = response.data.data;
+                  setUserData(userData);
+                  setToken(response.data.token);
+
+                  router.replace("/(tabs)/qrcode");
+                }
+              } catch {
+                Alert.alert("Lỗi", "Không thể đăng nhập tự động.");
               }
-            } catch {
-              Alert.alert("Lỗi", "Không thể đăng nhập tự động.");
             }
           }
         }
-      }
-    };
+      };
 
-    tryAutoLoginWithFaceID();
-  }, [setToken, setUserData, router]);
+      tryAutoLoginWithFaceID();
+    }, [setUserData, setToken, router])
+  );
 
   const handlePressLogin = async () => {
     if (isLoading) return;
